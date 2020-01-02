@@ -6,13 +6,16 @@
 #include <string.h>
 
 #define DEFAULT_FILE_EXT "bin"
+
 #define GT_FORMAT_MAGIC 0x29232840
-#define GT_FORMAT_MAGIC_TEXT "@(#)"
-#define GTARC_MAGIC_STR "GT-ARC"
-#define GTCAR_MAGIC_STR "GT-CAR"
 #define GTSEQ_MAGIC 0x47514553
 #define GTINST_MAGIC 0x54534E49
 #define GTENGN_MAGIC 0x4E474E45
+
+#define GT_FORMAT_MAGIC_TEXT "@(#)"
+#define GTARC_MAGIC_STR "GT-ARC"
+#define GTCAR_MAGIC_STR "GT-CAR"
+#define USEDCAR_MAGIC_STR "USEDCAR"
 
 struct GTArcHead
 {
@@ -85,6 +88,8 @@ char* TryToDetectFileExt(void* inbuffer)
 			return "arc";
 		if (strcmp((char*)((unsigned int)inbuffer + 4), GTCAR_MAGIC_STR) == 0)
 			return "car";
+		if (strcmp((char*)((unsigned int)inbuffer + 4), USEDCAR_MAGIC_STR) == 0)
+			return "usc";
 	}
 
 	return DEFAULT_FILE_EXT;
