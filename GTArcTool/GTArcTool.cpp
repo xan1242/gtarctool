@@ -6,12 +6,18 @@
 #include <string.h>
 
 #define DEFAULT_FILE_EXT "bin"
-#define GTARC_MAGIC_STR "(#)GT-ARC"
+#define GT_FORMAT_MAGIC 0x29232840
+#define GT_FORMAT_MAGIC_TEXT "@(#)"
+#define GTARC_MAGIC_STR "GT-ARC"
+#define GTCAR_MAGIC_STR "GT-CAR"
+#define GTSEQ_MAGIC 0x47514553
+#define GTINST_MAGIC 0x54534E49
+#define GTENGN_MAGIC 0x4E474E45
 
 struct GTArcHead
 {
-	char unk1; // always 0x40
-	char Magic[9]; // (#)GT-ARC
+	unsigned int Magic1; // always @(#) // 40 28 23 29 // 0x29232840
+	char Magic2[6]; // GT-ARC
 	short int unk2;
 	short int unk3; // version?
 	short int filecount;
@@ -61,17 +67,24 @@ unsigned int CountLinesInFile(FILE *finput)
 
 char* TryToDetectFileExt(void* inbuffer)
 {
-	if (*(unsigned int*)inbuffer == 0x47514553) // SEQG
+	if (*(unsigned int*)inbuffer == GTSEQ_MAGIC) // SEQG
 	{
 		return "seq";
 	}
-	if (*(unsigned int*)inbuffer == 0x54534E49) // INST
+	if (*(unsigned int*)inbuffer == GTINST_MAGIC) // INST
 	{
 		return "ins";
 	}
-	if (*(unsigned int*)inbuffer == 0x4E474E45) // ENGN
+	if (*(unsigned int*)inbuffer == GTENGN_MAGIC) // ENGN
 	{
 		return "es";
+	}
+	if (*(unsigned int*)inbuffer == GT_FORMAT_MAGIC) // GT-something format
+	{
+		if (strcmp((char*)((unsigned int)inbuffer + 4), GTARC_MAGIC_STR) == 0)
+			return "arc";
+		if (strcmp((char*)((unsigned int)inbuffer + 4), GTCAR_MAGIC_STR) == 0)
+			return "car";
 	}
 
 	return DEFAULT_FILE_EXT;
@@ -102,9 +115,10 @@ int WriteGTArc(char* IniFilePath, char* OutFilePath)
 		return -1;
 	}
 
-	ArcHeader.unk1 = 0x40;
-	strcpy(ArcHeader.Magic, GTARC_MAGIC_STR);
-
+	//ArcHeader.unk1 = 0x40;
+	ArcHeader.Magic1 = GT_FORMAT_MAGIC;
+	strcpy(ArcHeader.Magic2, GTARC_MAGIC_STR);
+	
 	fscanf(fin, "[HEADER]\nFileCount = %d\nUnk2 = %hX\nUnk3 = %hX\n\n", &ArcHeader.filecount, &ArcHeader.unk2, &ArcHeader.unk3);
 	
 	InFilenames = (char**)calloc(ArcHeader.filecount, sizeof(char*));
@@ -218,9 +232,16 @@ int ExtractGTArc(char* InFilePath, char* OutFilePath, char* FilenameListPath)
 	}
 
 	fread(&ArcHeader, sizeof(GTArcHead), 1, fin);
-	printf("HEADER INFO:\nMagic: %s\nFile count: %d\nUnk: 0x%hX\n\n", ArcHeader.Magic, ArcHeader.filecount, ArcHeader.unk3);
 
-	if (strcmp(ArcHeader.Magic, GTARC_MAGIC_STR) != 0)
+	if (ArcHeader.Magic1 != GT_FORMAT_MAGIC)
+	{
+		printf("ERROR: Wrong header magic! GT format files must start with %s\n", GT_FORMAT_MAGIC_TEXT);
+		return -1;
+	}
+
+	printf("HEADER INFO:\nMagic: %s\nFile count: %d\nUnk: 0x%hX\n\n", ArcHeader.Magic2, ArcHeader.filecount, ArcHeader.unk3);
+
+	if (strcmp(ArcHeader.Magic2, GTARC_MAGIC_STR) != 0)
 	{
 		printf("ERROR: Wrong header magic! This tool only supports %s\n", GTARC_MAGIC_STR);
 		return -1;
