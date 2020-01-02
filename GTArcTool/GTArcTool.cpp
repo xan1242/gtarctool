@@ -38,7 +38,10 @@ char IniOutPath[_MAX_PATH];
 char FileOutPath[_MAX_PATH];
 char FileInPath[_MAX_PATH];
 char MkDirStr[_MAX_PATH + 7];
+char OutputDir[_MAX_PATH];
+char* BaseFilename;
 void* FileBuffer;
+bool bFileList = true;
 
 //char* WriterFiletypeArray;
 char** InFilenames;
@@ -220,7 +223,7 @@ int ExtractGTArc(char* InFilePath, char* OutFilePath, char* FilenameListPath)
 	if (!bCheckDirExistance(OutFilePath))
 	{
 		printf("Creating directory: %s\n", OutFilePath);
-		sprintf(MkDirStr, "mkdir %s", OutFilePath);
+		sprintf(MkDirStr, "mkdir \"%s\"", OutFilePath);
 		system(MkDirStr);
 	}
 
@@ -256,7 +259,7 @@ int ExtractGTArc(char* InFilePath, char* OutFilePath, char* FilenameListPath)
 	
 	ArcFile = (GTArcFile*)calloc(ArcHeader.filecount, sizeof(GTArcFile));
 
-	if (FilenameListPath != NULL)
+	if (bFileList)
 	{
 		printf("Opening & parsing filename list: %s\n", FilenameListPath);
 		namelist = fopen(FilenameListPath, "r");
@@ -298,7 +301,7 @@ int ExtractGTArc(char* InFilePath, char* OutFilePath, char* FilenameListPath)
 		fseek(fin, OldPosition, SEEK_SET);
 
 		// filename generation + outfile write
-		if (FilenameListPath != NULL && i <= FileListCount)
+		if (bFileList && i <= FileListCount)
 			sprintf(FileOutPath, "%s\\%s", OutFilePath, InFilenames[i]);
 		else
 			sprintf(FileOutPath, "%s\\%d.%s", OutFilePath, i, TryToDetectFileExt(FileBuffer));
@@ -328,9 +331,9 @@ int ExtractGTArc(char* InFilePath, char* OutFilePath, char* FilenameListPath)
 int main(int argc, char *argv[])
 {
 	printf("Polyphony Digital GT-ARC tool\n");
-	if (argc < 3)
+	if (argc < 2)
 	{
-		printf("ERROR: Too few arguments.\nUSAGE: %s GTArc OutPath [NamesList]\nWRITE MODE USAGE: %s -w ArcIniFile OutArcFile", argv[0], argv[0]);
+		printf("ERROR: Too few arguments.\nUSAGE: %s GTArc [OutPath NamesList]\nWRITE MODE USAGE: %s -w ArcIniFile OutArcFile", argv[0], argv[0]);
 		return -1;
 	}
 
@@ -349,7 +352,20 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ExtractGTArc(argv[1], argv[2], argv[3]);
+	if (argv[2] == NULL)
+	{
+		strcpy(OutputDir, argv[1]);
+		BaseFilename = strrchr(OutputDir, '.');
+		if (BaseFilename != NULL)
+			BaseFilename[0] = 0;
+	}
+	else
+		strcpy(OutputDir, argv[2]);
+
+	if (argc < 4)
+		bFileList = false;
+
+	ExtractGTArc(argv[1], OutputDir, argv[3]);
 
     return 0;
 }
