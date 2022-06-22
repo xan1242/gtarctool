@@ -139,7 +139,11 @@ int WriteGTArc(char* IniFilePath, char* OutFilePath)
 	for (unsigned int i = 0; i < ArcHeader.filecount; i++)
 	{
 		fscanf(fin, "[%d]\nPath = %s\nUnk = %X\n\n", &dummy, FileOutPath, &ArcFile[i].unk);
-		strcpy(FileInPath, FileOutPath);
+		strcpy(FileInPath, IniFilePath);
+		if (strrchr(FileInPath, '\\'))
+			strcpy(strrchr(FileInPath, '\\') + 1, FileOutPath);
+		else
+			strcpy(FileInPath, FileOutPath);
 		InFilenames[i] = (char*)calloc(strlen(FileInPath) + 1, sizeof(char));
 		strcpy(InFilenames[i], FileInPath);
 
